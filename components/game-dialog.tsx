@@ -127,10 +127,23 @@ export default function GameDialog({
   const onAskQuestionClick = () => {
       if (userQuestion.trim()) {
           handleAskQuestion(userQuestion);
-          // Optionally clear the textarea after asking
-          // setUserQuestion(""); 
+          // 清空输入框
+          setUserQuestion(""); 
       }
   }
+
+  // 处理键盘按键事件，当按下Enter键（不按Shift）时提交问题
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // 检查是否按下Enter键且没有按下Shift键
+    if (e.key === 'Enter' && !e.shiftKey) {
+      // 阻止默认行为（换行）
+      e.preventDefault();
+      // 如果按钮没有被禁用，则触发提交
+      if (currentPuzzle && !isFetchingPuzzle && !isFetchingAnswer && userQuestion.trim() && !limitReached) {
+        onAskQuestionClick();
+      }
+    }
+  };
 
   // Handler for the View Answer button
   const handleViewAnswer = () => {
@@ -215,6 +228,7 @@ export default function GameDialog({
                 className="min-h-[120px]"
                 value={userQuestion}
                 onChange={(e) => setUserQuestion(e.target.value)}
+                onKeyDown={handleKeyDown}
                 // Disable if no current puzzle, fetching, or limit reached
                 disabled={!currentPuzzle || isFetchingAnswer || isFetchingPuzzle || limitReached}
               />

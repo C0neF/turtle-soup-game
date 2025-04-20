@@ -65,7 +65,7 @@ export default function Home() {
 
   // Question Limit State
   const [questionCount, setQuestionCount] = useState(0);
-  const QUESTION_LIMIT = 10; // Define the question limit
+  const [questionLimit, setQuestionLimit] = useState(10);  // 默认值为10，现在是动态的
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode)
@@ -361,9 +361,9 @@ export default function Home() {
   const handleAskQuestion = async (question: string) => {
     const currentPuzzle = puzzleHistory[currentPuzzleIndex];
 
-    if (!apiUrl || !apiKey || !selectedAnswerModel || !currentPuzzle || !question.trim() || questionCount >= QUESTION_LIMIT) {
+    if (!apiUrl || !apiKey || !selectedAnswerModel || !currentPuzzle || !question.trim() || questionCount >= questionLimit) {
       console.warn("Cannot ask question: Missing info, already fetching, or question limit reached.");
-      if (questionCount >= QUESTION_LIMIT) {
+      if (questionCount >= questionLimit) {
           setAiAnswer({ text: isEnglish ? "Question limit reached." : "已达到提问次数上限。", isError: true });
       } else if (!selectedAnswerModel) {
           setAiAnswer({ text: isEnglish ? "Please select an answer model in settings." : "请在设置中选择回答模型。", isError: true });
@@ -474,7 +474,7 @@ export default function Home() {
   }
 
   const handleSaveSettings = () => {
-    console.log("Saving settings:", { apiUrl, apiKey, selectedModel, selectedAnswerModel })
+    console.log("Saving settings:", { apiUrl, apiKey, selectedModel, selectedAnswerModel, questionLimit })
     localStorage.setItem("apiUrl", apiUrl)
     if (apiKey) localStorage.setItem("apiKey", window.btoa(apiKey))
     else localStorage.removeItem("apiKey")
@@ -488,6 +488,11 @@ export default function Home() {
       console.log("Saved answer model to localStorage:", selectedAnswerModel)
     }
     else localStorage.removeItem("selectedAnswerModel")
+    
+    // 保存问题限制数量
+    localStorage.setItem("questionLimit", questionLimit.toString())
+    console.log("Saved question limit to localStorage:", questionLimit)
+    
     setIsSettingsOpen(false)
   }
 
@@ -497,6 +502,7 @@ export default function Home() {
     const savedApiKeyEncoded = localStorage.getItem("apiKey")
     const savedSelectedModel = localStorage.getItem("selectedModel")
     const savedAnswerModel = localStorage.getItem("selectedAnswerModel")
+    const savedQuestionLimit = localStorage.getItem("questionLimit")
     
     let hasSettings = false;
 
@@ -527,6 +533,15 @@ export default function Home() {
       setSelectedAnswerModel(savedAnswerModel);
       console.log("Restoring saved answer model:", savedAnswerModel);
       hasSettings = true;
+    }
+    
+    // 加载问题数量限制
+    if (savedQuestionLimit) {
+      const limit = parseInt(savedQuestionLimit, 10);
+      if (!isNaN(limit) && [10, 20, 30].includes(limit)) {
+        setQuestionLimit(limit);
+        console.log("Restoring saved question limit:", limit);
+      }
     }
 
     // 如果有设置，触发模型加载
@@ -667,7 +682,7 @@ export default function Home() {
             isFetchingAnswer={isFetchingAnswer}
             handleAskQuestion={handleAskQuestion}
             questionCount={questionCount}
-            questionLimit={QUESTION_LIMIT}
+            questionLimit={questionLimit}
             isLoadingModels={isLoadingModels}
             isSettingsLoaded={isSettingsLoaded}
             selectedModel={selectedModel}
@@ -778,6 +793,30 @@ export default function Home() {
                          {model.name || model.id}
                        </SelectItem>
                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {/* Question Limit Select */}
+            <div className="grid grid-cols-4 items-center gap-4 col-span-4">
+              <Label htmlFor="questionLimit" className="text-right col-span-1">
+                {isEnglish ? "Question Limit" : "提问数量"}
+              </Label>
+              <div className="col-span-3">
+                <Select
+                   value={questionLimit.toString()}
+                   onValueChange={(value) => {
+                     console.log("Setting question limit:", value);
+                     setQuestionLimit(parseInt(value, 10));
+                   }}
+                 >
+                  <SelectTrigger className="w-full">
+                     <SelectValue placeholder={isEnglish ? "Select question limit" : "选择问题数量限制"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                     <SelectItem value="10">10</SelectItem>
+                     <SelectItem value="20">20</SelectItem>
+                     <SelectItem value="30">30</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
